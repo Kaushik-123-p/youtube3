@@ -18,4 +18,15 @@ app.use(express.static("public"))       // to store static data like images , sv
 app.use(cookieParser())     // we can access and set usrs browers coookies  throgh server 
 
 
+// app.get("/", (req, res) => {
+//     res.send("✅ Server is working!")
+// })
+
+
+//  Router imports
+import router from "./routes/users.routes.js"
+
+app.use("/api/v1/users", router)
+//  http://localhost:8080/api/v1/users
+
 export {app}
