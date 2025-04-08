@@ -23,22 +23,21 @@ const registerUser = asyncHandler (async (req, res) => {
         throw new ApiError(400, "All Fields are Required !!")
     }
 
-    const existedUser =  User.findOne(
+    const existedUser = await User.findOne(
         {
             $or : [{username}, {email}]
         }
     )
    
-    if(existedUser){
-        if(existedUser.username === username){
-            throw new ApiError((409, "username already exists !!"))
+    if (existedUser) {
+        // throw new ApiError(409, "Username already exists!");
+    
+        if (existedUser.username === username) {
+          throw new ApiError(409, "Username already exists!");
+        } else {
+          throw new ApiError(409, "Email already exists!");
         }
-        else{
-            throw new ApiError((409, "email already exists !!"))
-        }
-            // 409 is used for name exits or not 
-            // mostly used check like username or email
-    }
+      }
 
     const avatarLocalPath = req.files?.avatar[0]?.path
         // req.body is gives express
@@ -50,7 +49,12 @@ const registerUser = asyncHandler (async (req, res) => {
         // path have file orinal path with provided by cloudinary
         // after get first value then get its path
 
-    const coverImageLocalPath = req.files?.coverImage[0]?.path
+    // const coverImageLocalPath = req.files?.coverImage[0]?.path
+
+    let coverImageLocalPath;
+    if(req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0){
+        coverImageLocalPath = req.files.coverImage[0].path
+    }
 
     if(!avatarLocalPath){
         throw new ApiError(400, "Avatar File is Required ! ")
