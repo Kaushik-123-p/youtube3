@@ -321,6 +321,82 @@ const updateAccouuntDetails = asyncHandler(async(req,res) => {
     )
 })
 
+
+const updateUserAvatar = asyncHandler(async(req,res) => {
+
+    const avatarLocalPath = req.file?.path
+
+    if(!avatarLocalPath){
+        throw new ApiError(400, "Avatar file is missing!")
+    }
+
+    const avatar =  await uploadOnCloudinar(avatarLocalPath)
+
+    if(!avatar.url){
+        throw new ApiError(400, "Error While uploading on avatar!")
+    }
+
+    const user = await User.findByIdAndDelete(
+        req.user?._id,
+        {
+            $set : {
+                avatar : avatar.url
+            }
+        },
+        {
+            new : true
+        }
+    ).select("-password")
+
+    return res 
+    .status(200)
+    .json(
+        new ApiResponse(
+            200,
+            user,
+            "Avatar Image Updated Successfully."
+        )
+    )
+})
+
+
+const updateUserCoverImage = asyncHandler(async(req,res) => {
+
+    const coverImageLocalPath = req.file?.path
+
+    if(!coverImageLocalPath){
+        throw new ApiError(400, "Cover Image file is missing!")
+    }
+
+    const coverImage =  await uploadOnCloudinar(coverImageLocalPath)
+
+    if(!coverImage.url){
+        throw new ApiError(400, "Error While uploading on cover Image!")
+    }
+
+    const user = await User.findByIdAndDelete(
+        req.user?._id,
+        {
+            $set : {
+                coverImage : coverImage.url
+            }
+        },
+        {
+            new : true
+        }
+    ).select("-password")
+
+    return res 
+    .status(200)
+    .json(
+        new ApiResponse(
+            200,
+            user,
+            "Cover Image Updated Successfully."
+        )
+    )
+})
+
 export  {
             registerUser,
             loginUser,
@@ -328,5 +404,7 @@ export  {
             refreshAccessToken,
             changeCurrentPassword,
             getCurrentUser,
-            updateAccouuntDetails
+            updateAccouuntDetails,
+            updateUserAvatar,
+            updateUserCoverImage    
         }
