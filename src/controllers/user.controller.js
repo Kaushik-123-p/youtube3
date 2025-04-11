@@ -4,6 +4,7 @@ import {User} from "../models/user.modul.js"
 import {uploadOnCloudinar} from "../utils/cloudinary.js"
 import {ApiResponse} from "../utils/ApiResponse.js"
 import jwt from "jsonwebtoken"
+import mongoose from "mongoose"
 
 
 const generateAccessAndRefreshToken = async(userId) => {
@@ -492,6 +493,71 @@ const getUserChannelProfile = asyncHandler(async(req,res) => {
 })
 
 
+const getWatchHistoty = asyncHandler(async(req,res) => {
+    const user = await User.aggregate(
+        [
+            {
+                $match : {
+                    _id : new mongoose.Types.ObjectId(String(req.user._id))
+                    // _id : new mongoose.Types.ObjectId(req.user._id)
+                        // cac write like this butin this ObjectId gives waring 
+                        // Warning : he signature '(inputId: number): ObjectId' of 'mongoose.Types.ObjectId' is deprecated.ts(6387)
+                        // bson.d.ts(1352, 8): The declaration was marked as deprecated here.
+                        // means _id is number but mongoose stores only string.
+                        // that's why i used String()
+                }
+            },
+            {
+                $lookup : {
+                    from : "videos",
+                    localField :"watchHistory",
+                    foreignField: "_id",
+                    as : "watchHistory",
+                    
+                    pipeline : [
+                        {
+                            $lookup : {
+                                from : "users",
+                                localField : "owner",
+                                foreignField : _id,
+                                as : "owner",
+
+                                pipeline : [
+                                    {
+                                        $project : {
+                                            username : 1,
+                                            fullName : 1,
+                                            avatar : 1
+                                        }
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            $addFields : {
+                                owner : {
+                                    $first : "$owner"
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        ]
+    )
+
+    return res
+    .status(200)
+    .json(
+        new ApiResponse(
+            200,
+            user[0].watchHistoty,
+            "watch history fetched successfully."
+        )
+    )
+})
+
+
 export  {
             registerUser,
             loginUser,
@@ -502,5 +568,6 @@ export  {
             updateAccouuntDetails,
             updateUserAvatar,
             updateUserCoverImage,
-            getUserChannelProfile    
+            getUserChannelProfile,
+            getWatchHistoty    
         }
