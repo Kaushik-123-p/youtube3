@@ -397,6 +397,101 @@ const updateUserCoverImage = asyncHandler(async(req,res) => {
     )
 })
 
+
+const getUserChannelProfile = asyncHandler(async(req,res) => {
+
+        // In Express.js (a Node.js framework), when a client sends a request to a server with dynamic values in the URL, 
+        // you can access those values using req.params.
+        // params is short for parameters — specifically, route parameters in the URL.
+
+        // Let's say you have this route in your backend:
+        // app.get('/user/:id', (req, res) => {
+        //     console.log(req.params);
+        //   });
+
+        //   Now, if a user visits this URL:
+        //   http://localhost:5000/user/123
+
+    const {username} = req.params
+
+    if(!username?.trim()){
+        throw new ApiError(400, "username is missing!")
+    }
+
+    const channel = User.aggregate(
+        [
+            {
+                    // match (filter) fields from user models 
+                    // match is like a SQL WHERE
+                $match : {
+                    username : username?.toLowerCase()
+                }
+            },
+            {
+                    // perfome a join between two fields 
+                    // lookup s=is like a SQL JOIN
+                $lookup : {
+                    from : "subscriptions",         // Collection to join
+                    localField : "_id",             // Field in orders
+                    foreignField : "channel",       // Field in users
+                    as : "subscribers"              // Output array field
+                }
+            },
+            {
+                $lookup: {
+                    from : "subscriptions",
+                    localField: "_id",
+                    foreignField : "subscriber",
+                    as : "subscribedTo"
+                }
+            },
+            {
+                    // Adds new fields or changes existing fields in documents. 
+                    // This adds a new field fullName like "kaushik prajapati" to each document.
+                    // In User model have many fields in this $addFields add this fields on User model
+                $addFields : {
+                    subscriberrsCount : {
+                        $size : "$subscribers"  //  it is a field that's why se used $
+                    },
+                    channelSubscribedToCount : {
+                        $size  : "$subscribedTo"    //  it is a field that's why se used $
+                    },
+                    isSubscribed : {
+                        $cond: {
+                            if: {$in: [req.user?._id, "$subscribers.subscriber"]},
+                            then:true,
+                            else:false
+                        }
+                    }
+                }
+            },
+            {
+                $project: {
+                    username : 1,
+                    email : 1,
+                    fullName : 1,
+                    avatar : 1,
+                    coverImage : 1,
+                    subscriberrsCount : 1,
+                    channelSubscribedToCount : 1,
+                    isSubscribed : 1
+                }
+            }
+        ]
+    )
+
+    if(!channel?.length){
+        throw new ApiError(404, "channel does not exists!")
+    }
+
+    return res 
+    .status(200)
+    .json(
+        new ApiResponse(200, channel[0], "user channel fetched successfully.")
+    )
+})
+
+
 export  {
             registerUser,
             loginUser,
@@ -406,5 +501,6 @@ export  {
             getCurrentUser,
             updateAccouuntDetails,
             updateUserAvatar,
-            updateUserCoverImage    
+            updateUserCoverImage,
+            getUserChannelProfile    
         }
