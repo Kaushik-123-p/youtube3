@@ -176,8 +176,8 @@ const logoutUser = asyncHandler (async (req,res) => {
     await User.findByIdAndUpdate(
         req.user._id,
         {
-            $set : {
-                refreshToken  : undefined
+            $unset : {
+                refreshToken  : 1
             }
         },
         {
@@ -419,7 +419,7 @@ const getUserChannelProfile = asyncHandler(async(req,res) => {
         throw new ApiError(400, "username is missing!")
     }
 
-    const channel = User.aggregate(
+    const channel = await User.aggregate(
         [
             {
                     // match (filter) fields from user models 
@@ -519,7 +519,7 @@ const getWatchHistoty = asyncHandler(async(req,res) => {
                             $lookup : {
                                 from : "users",
                                 localField : "owner",
-                                foreignField : _id,
+                                foreignField : String(req.user._id),
                                 as : "owner",
 
                                 pipeline : [
